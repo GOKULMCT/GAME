@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05070d">
+  <meta name="description" content="Snake Arena Online - real-time multiplayer Snake for up to 8 players.">
+  <title>Snake Arena Online</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="conn-banner" class="conn-banner hidden" role="status" aria-live="polite"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <main id="app">
+
+    <!-- 1. HOME (create / join room) -->
+    <section id="screen-home" class="screen active" aria-label="Home">
+      <div class="home-wrap">
+        <header class="logo">
+          <img class="logo-mark" src="assets/logo.svg" alt="" width="84" height="84">
+          <h1><span class="neon-green">SNAKE</span> <span class="neon-cyan">ARENA</span></h1>
+          <p class="tagline">Real-time multiplayer &middot; up to 8 players &middot; one winner</p>
+        </header>
+
+        <div class="card">
+          <label class="field-label" for="player-name">PLAYER NAME</label>
+          <input id="player-name" class="input" type="text" maxlength="16" autocomplete="nickname"
+                 autocapitalize="words" spellcheck="false" placeholder="Enter your name">
+
+          <button id="btn-create" class="btn btn-primary" type="button">CREATE ROOM</button>
+
+          <div class="divider"><span>or join a friend</span></div>
+
+          <label class="field-label" for="room-id">ROOM ID</label>
+          <input id="room-id" class="input input-code" type="text" maxlength="6" autocomplete="off"
+                 autocapitalize="characters" spellcheck="false" placeholder="ABC123">
+
+          <button id="btn-join" class="btn btn-secondary" type="button">JOIN ROOM</button>
+
+          <p id="home-error" class="form-error" role="alert"></p>
+        </div>
+
+        <div class="card how-to">
+          <h2 class="card-title">HOW TO PLAY</h2>
+          <ul class="how-list">
+            <li><strong>Create a room</strong> and share the Room ID, or join a friend's room (2&ndash;8 players).</li>
+            <li>Steer with <kbd>&uarr;</kbd><kbd>&larr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. On a phone, use the on-screen pad or swipe.</li>
+            <li>Eat the glowing food to grow and score <strong>10 points</strong> each.</li>
+            <li>Crash into a wall, yourself or another snake and you are out. When the timer ends, the player with the <strong>highest score</strong> wins.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. LOBBY -->
+    <section id="screen-lobby" class="screen" aria-label="Lobby">
+      <div class="panel-wrap">
+        <h2 class="screen-title"><span class="neon-green">SNAKE</span> <span class="neon-cyan">ARENA</span></h2>
+        <div class="card">
+          <div class="room-head">
+            <div>
+              <span class="field-label">ROOM</span>
+              <strong id="lobby-room" class="room-code">------</strong>
+            </div>
+            <div class="room-actions">
+              <button id="btn-copy" class="btn btn-small" type="button">COPY</button>
+              <button id="btn-share" class="btn btn-small hidden" type="button">SHARE</button>
+            </div>
+          </div>
+
+          <div class="players-head">
+            <h3 class="card-title">PLAYERS</h3>
+            <span id="lobby-count" class="count">0 / 8</span>
+          </div>
+          <ul id="player-list" class="player-list"></ul>
+
+          <div class="settings">
+            <label class="field-label" for="duration">MATCH LENGTH</label>
+            <select id="duration" class="input select"></select>
+          </div>
+
+          <p id="lobby-hint" class="hint"></p>
+
+          <div class="lobby-actions">
+            <button id="btn-ready" class="btn btn-primary hidden" type="button">READY</button>
+            <button id="btn-start" class="btn btn-primary hidden" type="button" disabled>START GAME</button>
+            <button id="btn-leave" class="btn btn-ghost" type="button">LEAVE ROOM</button>
+          </div>
+          <p id="lobby-error" class="form-error" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. GAME -->
+    <section id="screen-game" class="screen" aria-label="Game">
+      <div class="game-root">
+        <div class="hud">
+          <div id="hud-time" class="hud-time">TIME: 03:00</div>
+          <div class="hud-mid">
+            <span class="hud-room">ROOM <b id="hud-room">------</b></span>
+            <span id="hud-score" class="hud-score">SCORE: 0</span>
+          </div>
+          <button id="btn-quit" class="btn btn-small btn-danger" type="button">LEAVE</button>
+        </div>
+
+        <div class="game-main">
+          <div id="arena-wrap" class="arena-wrap">
+            <canvas id="arena" aria-label="Snake arena"></canvas>
+
+            <div id="overlay-countdown" class="overlay hidden" aria-live="assertive">
+              <div id="countdown-number" class="countdown-number">3</div>
+            </div>
+
+            <div id="overlay-death" class="death-card hidden" aria-live="assertive">
+              <div class="death-title">YOU DIED</div>
+              <div id="death-score" class="death-score">Score: 0</div>
+              <div id="death-note" class="death-note">Spectating until the match ends&hellip;</div>
+            </div>
+
+            <div id="spectator-badge" class="spectator hidden">SPECTATING</div>
+          </div>
+
+          <aside class="sidebar">
+            <h3 class="side-title">LEADERBOARD</h3>
+            <ol id="leaderboard" class="leaderboard"></ol>
+
+            <div id="dpad" class="dpad" aria-label="On-screen controls">
+              <button class="dpad-btn dpad-up" type="button" data-dir="up" aria-label="Up">&uarr;</button>
+              <button class="dpad-btn dpad-left" type="button" data-dir="left" aria-label="Left">&larr;</button>
+              <button class="dpad-btn dpad-down" type="button" data-dir="down" aria-label="Down">&darr;</button>
+              <button class="dpad-btn dpad-right" type="button" data-dir="right" aria-label="Right">&rarr;</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. GAME OVER -->
+    <section id="screen-over" class="screen" aria-label="Game over">
+      <div class="panel-wrap">
+        <div class="card over-card">
+          <h2 class="over-title">GAME OVER</h2>
+
+          <div class="winner-block">
+            <div class="trophy" aria-hidden="true">&#127942;</div>
+            <div id="winner-label" class="winner-label">WINNER</div>
+            <div id="winner-name" class="winner-name">&mdash;</div>
+            <div id="winner-score" class="winner-score">Score: 0</div>
+          </div>
+
+          <h3 class="card-title">FINAL LEADERBOARD</h3>
+          <ol id="final-board" class="final-board"></ol>
+          <p id="over-me" class="over-me"></p>
+
+          <div class="over-actions">
+            <button id="btn-again" class="btn btn-primary" type="button">PLAY AGAIN</button>
+            <button id="btn-back-lobby" class="btn btn-secondary" type="button">BACK TO LOBBY</button>
+            <button id="btn-home" class="btn btn-ghost" type="button">HOME</button>
+          </div>
+          <p id="over-error" class="form-error" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <noscript><p class="noscript">Snake Arena Online needs JavaScript. Please enable it and reload the page.</p></noscript>
+
+  <script src="config.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
